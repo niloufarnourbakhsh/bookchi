@@ -1,0 +1,39 @@
+:root {
+    --red_1: #ac112b;
+}
+
+@font-face {
+    font-family: 'Vazir';
+    src: url("../fonts/Vazir.eot");
+    src: url("../fonts/Vazir.woff") format('woff');
+}
+body {
+    font-family: "Vazir", Arial, serif !important;
+    font-weight: normal;
+    direction: rtl !important;
+    font-size: 14px;
+}
+.img-size {
+    height: 180px !important;
+    width: 100%;
+}
+#image-section {
+    height: 70vh;
+}
+.bg-dark-red {
+    background-color: var(--red_1) !important;
+}
+
+li {
+    list-style: none;
+    border-bottom: none
+}
+
+a {
+    text-decoration: none !important;
+    color: #000000;
+}
+
+a:hover {
+    text-decoration: none;
+}

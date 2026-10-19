@@ -1,0 +1,6 @@
+{
+    "Book": true,
+    "UploadFile": true,
+    "Cart": true,
+    "Discount": true
+}
