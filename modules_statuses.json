@@ -2,5 +2,6 @@
     "Book": true,
     "UploadFile": true,
     "Cart": true,
-    "Discount": true
+    "Discount": true,
+    "User": true
 }
