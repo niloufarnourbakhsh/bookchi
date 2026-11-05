@@ -11,5 +11,6 @@ Route::middleware([])->prefix('v1')->group(function () {
         ->middleware('throttle:send-code');
     Route::post('/verificatin/verify/code',[VerifyController::class,'verifyCode'])->name('send-code');
     Route::post('/register',[UserController::class,'register'])->name('register');
+    Route::post('/login',[UserController::class,'login'])->name('login');
 });
 

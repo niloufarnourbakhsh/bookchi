@@ -47,7 +47,7 @@ class UserServiceProvider extends ModuleServiceProvider
     // }
     public function boot(): void
     {
-        parent::boot(); 
+        parent::boot();
         RateLimiter::for('send-code',function (){
             return app()->isLocal() ? Limit::none() :
                 Limit::perMinutes(10, 5)->by(request()->ip().':'.request()->userAgent());
