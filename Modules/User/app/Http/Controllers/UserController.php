@@ -14,7 +14,8 @@ class UserController extends Controller
     public function register(RegisterRequest $request)
     {
         $user=User::query()->create($request->validated());
-        $token=$user->createToken( name: 'api_token' ,
+        $token=$user->createToken(
+            name: 'api_token' ,
             expiresAt: now()->addDays(60))->plainTextToken;
         return response()->json([
             'data'=>$user,
@@ -25,7 +26,9 @@ class UserController extends Controller
     public function login(LoginRequest $request)
     {
         $user=Auth::User();
-        $token=$user->createToken(name: 'api_token', expiresAt: now()->addDays(60))->plainTextToken;
+        $token=$user->createToken(
+            name: 'api_token',
+            expiresAt: now()->addDays(60))->plainTextToken;
         return response()->json([
             'token'=>$token
         ]);
