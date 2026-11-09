@@ -5,10 +5,13 @@ namespace Modules\User\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 use Modules\User\Enums\ActionType;
+use Modules\User\Http\Requests\Traits\BaseTrait;
+use Modules\User\Http\Requests\Traits\TokenVerificationTrait;
 use Modules\User\Services\VerificationCodeService;
 
 class RegisterRequest extends FormRequest
 {
+    use BaseTrait , TokenVerificationTrait;
     /**
      * Get the validation rules that apply to the request.
      */
@@ -34,10 +37,8 @@ class RegisterRequest extends FormRequest
                     'email'=>$this->email,
                     'phone'=>$this->phone
                 ];
-                $verifyToken=(new  VerificationCodeService())
-                    ->verifyToken( token: $this->token,
-                        action: ActionType::Register,
-                       contactList:  $contactList);
+
+                $verifyToken= $this->verifyToken(token: $this->token , action: ActionType::Register, contactList: $contactList);
                 if (!$verifyToken){
                     $validator->errors()->add('token', 'توکن منقضی شده');
                     return;
@@ -46,11 +47,5 @@ class RegisterRequest extends FormRequest
         ];
     }
 
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
+
 }

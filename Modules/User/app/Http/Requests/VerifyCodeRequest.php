@@ -7,17 +7,20 @@ use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Validator;
 use Modules\User\Enums\ActionType;
 use Modules\User\Enums\ContactType;
+use Modules\User\Http\Requests\Traits\BaseTrait;
+use Modules\User\Http\Requests\Traits\ValidationContactTrait;
 use Modules\User\Services\VerificationCodeService;
 
 class VerifyCodeRequest extends FormRequest
 {
+    use BaseTrait , ValidationContactTrait;
     public $contactType;
-    public $action;
+    public $actionType;
 
     public function prepareForValidation(): void
     {
         $this->contactType=ContactType::detectContactType(request()->contact);
-        $this->action=ActionType::tryFrom(request()->action);
+        $this->actionType=ActionType::tryFrom(request()->action);
     }
     /**
      * Get the validation rules that apply to the request.
@@ -26,22 +29,11 @@ class VerifyCodeRequest extends FormRequest
     {
         return [
             'code'=>['bail','required','integer'],
-            'contact'=>['bail','required','string', ...$this->getContactValidation()],
+            'contact'=>['bail','required','string', ...$this->getContactValidation($this->contactType, $this->actionType)],
             'action'=>['bail','required','string', new Enum(ActionType::class)]
         ];
     }
 
-    public function getContactValidation(): array
-    {
-        if ($this->contactType===ContactType::Email){
-            $rules = ['email:rfc,dns'];
-            $rules[]=$this->action->NeedToBeUnique() ? 'unique:users,email' : 'exists:users,email';
-        }else{
-            $rules = ['phone:mobile,IR'];
-            $rules[]=$this->action->NeedToBeUnique() ? 'unique:users,phone' :'exists:users,phone';
-        }
-        return  $rules;
-    }
 
     public function after(): array
     {
@@ -53,18 +45,12 @@ class VerifyCodeRequest extends FormRequest
                 $verifyCode=(new VerificationCodeService())
                     ->verifyCode(
                         code: $this->validated('code'),
-                        action: $this->action,
+                        action: $this->actionType,
                         contact:  $this->validated('contact'),
                         validator:  $validator);
                 if (! $verifyCode) $validator->errors()->add('code',' کد وارد شده معتبر نیست');
             }
         ];
     }
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
+
 }

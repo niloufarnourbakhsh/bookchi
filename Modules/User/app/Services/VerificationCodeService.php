@@ -11,95 +11,83 @@ use Illuminate\Validation\Validator;
 use Modules\User\Emails\SendCodeEmail;
 use Modules\User\Enums\ActionType;
 use Modules\User\Enums\ContactType;
+use Modules\User\Http\Requests\Traits\BaseTrait;
 use Modules\User\Http\Requests\VerifyCodeRequest;
 use Random\RandomException;
 
 class VerificationCodeService
 {
-    const int EmailExpiryTime=3;
-    const int PhoneExpiryTime=2;
+
+    public TokenService $tokenService;
+    public CacheService $cacheService;
+
+    public function __construct()
+    {
+        $this->tokenService= new TokenService();
+        $this->cacheService= new CacheService();
+    }
 
     /**
      * @throws RandomException
      */
     public function CreateCode(ActionType $actionType, string $contact, ContactType $contactType, ?int $expireTime=null): int
     {
-        if (is_null($expireTime)){
-            $expireTime= $contactType===ContactType::Email  ? self::EmailExpiryTime : self::PhoneExpiryTime;
-        }
-        $expireAT=\Illuminate\Support\now()->addMinutes($expireTime);
+
         $code=random_int(100000,999999);
-        Cache::put($this->getCacheKey($actionType, $contact),[
-            'action'=>$actionType->value,
-            'contact'=>$contact,
-            'code'=>$code,
-            'expire_at'=>$expireAT->timestamp
-        ],$expireAT);
+        $this->cacheService->putCache(
+            code:  $code,
+            actionType: $actionType,
+            contactType: $contactType,
+            contact:  $contact ,
+            expireTime: $expireTime);
         return $code;
     }
 
     public function checkRetryTime(ActionType $actionType, string $contact): ?int
     {
-        $CacheValue=Cache::get($this->getCacheKey($actionType, $contact));
+        $CacheValue=$this->cacheService->getCache($actionType, $contact);
         $remainingTime= $CacheValue
-            ? Carbon::createFromTimestamp($CacheValue['expire_at'])->timestamp  - now()->timestamp
+            ? Carbon::createFromTimestamp($CacheValue['expired_at'])->timestamp  - now()->timestamp
             :null;
         return $remainingTime !==0 ? $remainingTime : null;
     }
 
     public function verifyCode(int $code,ActionType $action,string $contact,Validator $validator) :bool
     {
-        $key=$this->getCacheKey($action, $contact);
+        $key=$this->cacheService->getCacheKey($action, $contact);
         $cacheValue=Cache::get($key);
         if (!$cacheValue){
             $validator->errors()->add('code', ' کد وارد شده معتبر نیست');
             return  false;
         }
-        $expireTime=Carbon::createFromTimestamp($cacheValue['expire_at']);
-        return $key && now()->isBefore($expireTime) && $cacheValue['code']===$code ? true :false;
+        $expireTime=Carbon::createFromTimestamp($cacheValue['expired_at']);
+        //this part returns true or false
+        return $key && now()->isBefore($expireTime) && $cacheValue['code']===$code;
     }
 
-    public function generateToken(VerifyCodeRequest $request )
+    public function generateToken(VerifyCodeRequest $request ): string
     {
-        $tokenValue= $this->getToken($request->action, $request->validated('contact'), $request->contactType);
-        if ($tokenValue){
-            return $tokenValue['token'];
-        }
-        $token=Str::random(100);
-        $expiryTime=now()->addMinutes(5);
-        Cache::put('verification:after_verify:token:',[
-            'token'=>$token,
-            'contact'=>$request->contact,
-            'action'=>$request->action ,
-            'contact_type'=>$request->contactType
-        ], $expiryTime);
+        do{
+            $token=Str::random(100);
+        }while($this->tokenService->getToken($token));
+        $this->tokenService->putToken($token ,$request->validated() , $request->contactType);
         return $token;
     }
-
     public function verifyToken($token, $action,array $contactList) :string|null
+
     {
-        $tokenExisted = $this->getToken();
+        $tokenExisted = $this->tokenService->getToken($token);
         if (is_null($tokenExisted)) return null;
-        $contact = $tokenExisted['contact_type'] === ContactType::Email ? $contactList['email'] : $contactList['phone'];
-        if ($tokenExisted['token']=== $token &&
-            $tokenExisted['contact']===$contact
-        && $tokenExisted['action']===$action){
+            $contact= $tokenExisted['contact_type']===ContactType::Email ? $contactList['email'] : $contactList['phone'];
+        if (
+            $tokenExisted['token']=== $token
+            && $tokenExisted['contact']===$contact
+             && $tokenExisted['action']===$action)
+        {
             return  $tokenExisted['token'];
         }
         return  null;
     }
-
-    /**
-     * @param ActionType $actionType
-     * @param string $contact
-     * @return string
-     */
-    public function getCacheKey(ActionType $actionType, string $contact): string
-    {
-        $key=hash('sha256', $actionType->value . ':' . $contact );
-        return 'verification:' .$key;
-    }
-
     public function sendCodeByEmail($code, $contact): bool
     {
         try {
@@ -123,12 +111,10 @@ class VerificationCodeService
     }
 
     /**
-     * @return mixed
+     * @param $key
+     * @return void
      */
-    public function getToken(): mixed
-    {
-        return Cache::get('verification:after_verify:token:');
-    }
+
     protected function forgetCache($key): void
     {
         Cache::forget($key);
