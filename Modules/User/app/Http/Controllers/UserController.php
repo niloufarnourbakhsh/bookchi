@@ -2,6 +2,7 @@
 
 namespace Modules\User\Http\Controllers;
 
+use App\ApiResponse\Facade\ApiResponse;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,10 +18,7 @@ class UserController extends Controller
         $token=$user->createToken(
             name: 'api_token' ,
             expiresAt: now()->addDays(60))->plainTextToken;
-        return response()->json([
-            'data'=>$user,
-            'token'=>$token
-        ]);
+        return ApiResponse::withData($user)->withToken($token)->build()->response();
     }
 
     public function login(LoginRequest $request)
@@ -29,8 +27,7 @@ class UserController extends Controller
         $token=$user->createToken(
             name: 'api_token',
             expiresAt: now()->addDays(60))->plainTextToken;
-        return response()->json([
-            'token'=>$token
-        ]);
+
+        return ApiResponse::withToken($token)->build()->response();
     }
 }
