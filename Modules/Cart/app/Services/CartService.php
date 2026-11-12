@@ -136,9 +136,9 @@ class CartService
         return $items;
     }
 
-    public function getDiscount()
+    public function getDiscount(): ?Discount
     {
-
+        return Discount::query()->where('code', $this->cart['discount'])->first();
     }
     public function addDiscount($discount): static
     {
