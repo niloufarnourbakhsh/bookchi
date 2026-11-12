@@ -15,7 +15,7 @@ class TokenService
             'token'=>$token,
             'contact'=>$validatedData['contact'],
             'action'=>$validatedData['action'] ,
-            'contact_type'=>$contactType
+            'contact_type'=>$contactType,
         ], $expiryTime);
     }
 

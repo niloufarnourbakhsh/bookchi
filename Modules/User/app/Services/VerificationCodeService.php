@@ -62,7 +62,10 @@ class VerificationCodeService
         }
         $expireTime=Carbon::createFromTimestamp($cacheValue['expired_at']);
         //this part returns true or false
-        return $key && now()->isBefore($expireTime) && $cacheValue['code']===$code;
+        return $key
+            && now()->isBefore($expireTime)
+            && $cacheValue['code']===$code
+            && $cacheValue['identifier']===request()->ip.':'.request()->userAgent();
     }
 
     public function generateToken(VerifyCodeRequest $request ): string

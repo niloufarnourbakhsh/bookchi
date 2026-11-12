@@ -31,7 +31,8 @@ class CacheService
             'action'=>$actionType->value,
             'contact'=>$contact,
             'code'=>$code,
-            'expired_at'=>$expireAT->timestamp
+            'expired_at'=>$expireAT->timestamp,
+            'identifier'=>request()->ip.':'.request()->userAgent()
         ],$expireAT);
     }
 

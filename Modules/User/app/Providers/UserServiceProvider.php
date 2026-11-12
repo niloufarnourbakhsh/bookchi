@@ -52,5 +52,15 @@ class UserServiceProvider extends ModuleServiceProvider
             return app()->isLocal() ? Limit::none() :
                 Limit::perMinutes(10, 5)->by(request()->ip().':'.request()->userAgent());
         });
+        RateLimiter::for('register',function (){
+            return app()->isLocal()
+                ? Limit::none()
+                : Limit::perMinutes(10, 5)->by(request()->ip().':'.request()->userAgent());
+        });
+        RateLimiter::for('login',function (){
+            return app()->isLocal()
+                ? Limit::none()
+                : Limit::perMinutes(10, 5)->by(request()->ip().':'.request()->userAgent());
+        });
     }
 }
